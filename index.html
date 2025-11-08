@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Netflix Revenue Prediction Tool</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Netflix Revenue Prediction Tool</h1>
+            <p class="subtitle">Predict box office revenue using machine learning</p>
+        </header>
+
+        <main>
+            <div class="prediction-section">
+                <div class="input-panel">
+                    <h2>Movie Parameters</h2>
+                    
+                    <div class="form-group">
+                        <label for="genre">Primary Genre:</label>
+                        <select id="genre" class="form-control">
+                            <option value="">Loading...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="votes">Votes:</label>
+                        <input type="range" id="votes" min="1000" max="500000" value="50000" step="1000" class="slider">
+                        <div class="slider-value">
+                            <span id="votes-value">50,000</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rating">IMDb Rating:</label>
+                        <input type="range" id="rating" min="1" max="10" value="6.5" step="0.1" class="slider">
+                        <div class="slider-value">
+                            <span id="rating-value">6.5</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="runtime">Runtime (minutes):</label>
+                        <input type="range" id="runtime" min="40" max="200" value="120" step="5" class="slider">
+                        <div class="slider-value">
+                            <span id="runtime-value">120</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="metascore">Metascore:</label>
+                        <input type="range" id="metascore" min="1" max="100" value="50" step="1" class="slider">
+                        <div class="slider-value">
+                            <span id="metascore-value">50</span>
+                        </div>
+                    </div>
+
+                    <button id="predict-btn" class="btn-primary">Predict Revenue</button>
+                </div>
+
+                <div class="result-panel">
+                    <h2>Prediction Result</h2>
+                    <div id="prediction-result" class="prediction-box">
+                        <p class="placeholder">Enter movie parameters and click "Predict Revenue"</p>
+                    </div>
+                    
+                    <div class="input-summary" id="input-summary" style="display: none;">
+                        <h3>Input Summary</h3>
+                        <div class="summary-grid">
+                            <div class="summary-item">
+                                <span class="label">Genre:</span>
+                                <span id="summary-genre">-</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="label">Rating:</span>
+                                <span id="summary-rating">-</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="label">Votes:</span>
+                                <span id="summary-votes">-</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="label">Runtime:</span>
+                                <span id="summary-runtime">-</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="label">Metascore:</span>
+                                <span id="summary-metascore">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-section">
+                <div class="info-card">
+                    <h3>About This Model</h3>
+                    <p><strong>Model Type:</strong> Random Forest Regressor</p>
+                    <p><strong>R² Score:</strong> 0.5367</p>
+                    <p><strong>Mean Absolute Error:</strong> $43.52 Million</p>
+                    <p><strong>Training Data:</strong> IMDB Movie Dataset</p>
+                </div>
+
+                <div class="info-card">
+                    <h3>Model Performance</h3>
+                    <p>This model was trained on historical movie data including:</p>
+                    <ul>
+                        <li>IMDb ratings and votes</li>
+                        <li>Movie runtime and genre</li>
+                        <li>Metascore ratings</li>
+                    </ul>
+                    <p>The model predicts box office revenue in millions of dollars.</p>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Built with Machine Learning | Deployed on GitHub Pages</p>
+        </footer>
+    </div>
+
+    <script src="model_params.js"></script>
+    <script src="data_ranges.js"></script>
+    <script src="predictor.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
