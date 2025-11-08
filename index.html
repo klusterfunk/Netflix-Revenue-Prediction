@@ -142,7 +142,13 @@
         // Emergency fallback: populate genres if they're still not loaded after 1 second
         setTimeout(function() {
             var genreSelect = document.getElementById('genre');
-            if (genreSelect && (genreSelect.options.length <= 1 || genreSelect.options[0].value === '' || genreSelect.options[0].textContent === 'Loading...')) {
+            // Only run if there's still a "Loading..." or empty state
+            if (genreSelect && (
+                genreSelect.options.length <= 1 || 
+                genreSelect.options[0].value === '' || 
+                genreSelect.options[0].textContent === 'Loading...' ||
+                (genreSelect.options.length === 1 && genreSelect.options[0].textContent === 'Select Genre...')
+            )) {
                 console.log('Emergency fallback: populating genres');
                 var fallbackGenres = ['Action', 'Adventure', 'Animation', 'Biography', 'Comedy', 'Crime', 'Drama', 'Fantasy', 'Horror', 'Mystery', 'Romance', 'Sci-Fi', 'Thriller'];
                 genreSelect.innerHTML = '';

@@ -88,6 +88,16 @@ function populateGenresNow() {
         return;
     }
     
+    // Check if genres are already in HTML (hardcoded)
+    const hasGenresInHTML = genreSelect.options.length > 1 && 
+                            genreSelect.options[0].textContent !== 'Loading...' &&
+                            genreSelect.options[0].textContent !== 'Select Genre...';
+    
+    if (hasGenresInHTML) {
+        console.log('Genres already in HTML, no need to populate');
+        return;
+    }
+    
     // Use dataRanges if available, otherwise use fallback
     let genresToUse = FALLBACK_GENRES;
     if (typeof dataRanges !== 'undefined' && dataRanges && dataRanges.genres && Array.isArray(dataRanges.genres) && dataRanges.genres.length > 0) {
@@ -190,27 +200,39 @@ function populateGenres(genres) {
     
     if (!genres || !Array.isArray(genres) || genres.length === 0) {
         console.error('Invalid genres array:', genres);
-        genreSelect.innerHTML = '<option value="">No genres available</option>';
+        // Don't clear if we already have genres from HTML
+        if (genreSelect.options.length <= 1) {
+            genreSelect.innerHTML = '<option value="">No genres available</option>';
+        }
         return;
     }
     
-    // Clear existing options
-    genreSelect.innerHTML = '';
+    // Check if genres are already populated (from HTML)
+    const currentOptions = Array.from(genreSelect.options).map(opt => opt.value);
+    const hasGenres = currentOptions.length > 1 && currentOptions.some(v => v && v !== '');
     
-    // Add each genre as an option
-    genres.forEach(genre => {
-        if (genre) {
-            const option = document.createElement('option');
-            option.value = genre;
-            option.textContent = genre;
-            genreSelect.appendChild(option);
+    // Only clear and repopulate if we don't already have genres or if we want to update them
+    if (!hasGenres || genreSelect.options[0].textContent === 'Loading...') {
+        // Clear existing options
+        genreSelect.innerHTML = '';
+        
+        // Add each genre as an option
+        genres.forEach(genre => {
+            if (genre) {
+                const option = document.createElement('option');
+                option.value = genre;
+                option.textContent = genre;
+                genreSelect.appendChild(option);
+            }
+        });
+        
+        // Set default to first genre
+        if (genres.length > 0) {
+            genreSelect.value = genres[0];
+            console.log('Genre dropdown populated with', genres.length, 'genres');
         }
-    });
-    
-    // Set default to first genre
-    if (genres.length > 0) {
-        genreSelect.value = genres[0];
-        console.log('Genre dropdown populated with', genres.length, 'genres');
+    } else {
+        console.log('Genres already populated, skipping update');
     }
 }
 
