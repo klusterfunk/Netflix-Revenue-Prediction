@@ -80,39 +80,55 @@ function initializeApp() {
     }
 }
 
+// Populate genres immediately - don't wait for anything
+function populateGenresNow() {
+    const genreSelect = document.getElementById('genre');
+    if (!genreSelect) {
+        console.error('Genre select element not found');
+        return;
+    }
+    
+    // Use dataRanges if available, otherwise use fallback
+    let genresToUse = FALLBACK_GENRES;
+    if (typeof dataRanges !== 'undefined' && dataRanges && dataRanges.genres && Array.isArray(dataRanges.genres) && dataRanges.genres.length > 0) {
+        genresToUse = dataRanges.genres;
+        console.log('Using genres from data_ranges.js');
+    } else {
+        console.log('Using fallback genres');
+    }
+    
+    populateGenres(genresToUse);
+}
+
 // Wait for DOM and scripts to be ready
 document.addEventListener('DOMContentLoaded', function() {
-    // Try to initialize immediately
-    if (typeof MovieRevenuePredictor !== 'undefined') {
+    // Populate genres immediately - don't wait for anything
+    populateGenresNow();
+    
+    // Then try to initialize the rest of the app
+    setTimeout(function() {
         initializeApp();
-    } else {
-        // If predictor class isn't loaded yet, wait a bit and retry
-        setTimeout(function() {
-            if (typeof MovieRevenuePredictor !== 'undefined') {
-                initializeApp();
-            } else {
-                // Last resort: populate genres anyway
-                console.warn('Some scripts may not have loaded, but populating genres anyway');
-                populateGenres(FALLBACK_GENRES);
-                // Retry initialization after another delay
-                setTimeout(initializeApp, 500);
-            }
-        }, 200);
-    }
+    }, 100);
 });
 
 // Also try when window is fully loaded as a backup
 window.addEventListener('load', function() {
-    // If genres still aren't populated, use fallback
+    // Double-check genres are populated
     const genreSelect = document.getElementById('genre');
-    if (genreSelect && genreSelect.options.length <= 1) {
-        console.log('Genres not populated yet, using fallback');
-        populateGenres(FALLBACK_GENRES);
-        if (typeof dataRanges !== 'undefined' && dataRanges && dataRanges.genres) {
-            populateGenres(dataRanges.genres);
-        }
+    if (genreSelect && (genreSelect.options.length <= 1 || genreSelect.options[0].value === '')) {
+        console.log('Genres not populated yet, populating now');
+        populateGenresNow();
     }
 });
+
+// One more safety check - run after a short delay
+setTimeout(function() {
+    const genreSelect = document.getElementById('genre');
+    if (genreSelect && (genreSelect.options.length <= 1 || genreSelect.options[0].value === '')) {
+        console.log('Final check: populating genres');
+        populateGenresNow();
+    }
+}, 500);
 
 function setupSliders(ranges) {
     // Setup votes slider
