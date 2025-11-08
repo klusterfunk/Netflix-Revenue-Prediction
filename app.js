@@ -5,12 +5,26 @@
 let predictor = null;
 let dataRanges = null;
 
+// Fallback genres in case data_ranges.js doesn't load
+const FALLBACK_GENRES = [
+    "Action",
+    "Adventure",
+    "Animation",
+    "Biography",
+    "Comedy",
+    "Crime",
+    "Drama",
+    "Fantasy",
+    "Horror",
+    "Mystery",
+    "Romance",
+    "Sci-Fi",
+    "Thriller"
+];
+
 // Initialize the application
-document.addEventListener('DOMContentLoaded', async function() {
+function initializeApp() {
     try {
-        // Wait a moment to ensure scripts are loaded
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
         // Load model parameters and data ranges
         // These will be loaded from the exported JSON files
         if (typeof modelParams !== 'undefined' && modelParams) {
@@ -18,28 +32,42 @@ document.addEventListener('DOMContentLoaded', async function() {
             console.log('Model loaded successfully');
         } else {
             console.error('Model parameters not loaded');
-            document.getElementById('prediction-result').innerHTML = 
-                '<p class="placeholder">Error: Model parameters not loaded. Please check model_params.js</p>';
-            return;
+            // Don't return - still try to populate genres
         }
+
+        // Try to get genres from dataRanges, fallback to FALLBACK_GENRES
+        let genresToUse = FALLBACK_GENRES;
+        let rangesToUse = null;
 
         if (typeof dataRanges !== 'undefined' && dataRanges) {
             console.log('Data ranges loaded:', dataRanges);
-            console.log('Genres available:', dataRanges.genres);
+            rangesToUse = dataRanges;
             
             if (dataRanges.genres && Array.isArray(dataRanges.genres) && dataRanges.genres.length > 0) {
-                setupSliders(dataRanges);
-                populateGenres(dataRanges.genres);
-                console.log('Genres populated successfully');
+                genresToUse = dataRanges.genres;
+                console.log('Using genres from data_ranges.js:', genresToUse);
             } else {
-                console.error('Genres array is empty or invalid:', dataRanges.genres);
-                document.getElementById('genre').innerHTML = '<option value="">No genres available</option>';
+                console.warn('Genres array is empty or invalid, using fallback');
             }
         } else {
-            console.error('Data ranges not loaded');
-            document.getElementById('prediction-result').innerHTML = 
-                '<p class="placeholder">Error: Data ranges not loaded. Please check data_ranges.js</p>';
-            return;
+            console.warn('Data ranges not loaded, using fallback genres');
+        }
+
+        // Always populate genres (either from dataRanges or fallback)
+        populateGenres(genresToUse);
+        console.log('Genres populated successfully with', genresToUse.length, 'genres');
+
+        // Setup sliders if we have ranges
+        if (rangesToUse) {
+            setupSliders(rangesToUse);
+        } else {
+            // Use default ranges if data_ranges.js didn't load
+            setupSliders({
+                votes_range: [178, 1791916, 190970],
+                rating_range: [1.9, 9.0, 6.8],
+                runtime_range: [66, 191, 114],
+                metascore_range: [11, 100, 59]
+            });
         }
 
         // Setup event listeners
@@ -47,8 +75,42 @@ document.addEventListener('DOMContentLoaded', async function() {
         
     } catch (error) {
         console.error('Error initializing app:', error);
-        document.getElementById('prediction-result').innerHTML = 
-            '<p class="placeholder">Error loading model. Please refresh the page.</p>';
+        // Still try to populate genres even if there's an error
+        populateGenres(FALLBACK_GENRES);
+    }
+}
+
+// Wait for DOM and scripts to be ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Try to initialize immediately
+    if (typeof MovieRevenuePredictor !== 'undefined') {
+        initializeApp();
+    } else {
+        // If predictor class isn't loaded yet, wait a bit and retry
+        setTimeout(function() {
+            if (typeof MovieRevenuePredictor !== 'undefined') {
+                initializeApp();
+            } else {
+                // Last resort: populate genres anyway
+                console.warn('Some scripts may not have loaded, but populating genres anyway');
+                populateGenres(FALLBACK_GENRES);
+                // Retry initialization after another delay
+                setTimeout(initializeApp, 500);
+            }
+        }, 200);
+    }
+});
+
+// Also try when window is fully loaded as a backup
+window.addEventListener('load', function() {
+    // If genres still aren't populated, use fallback
+    const genreSelect = document.getElementById('genre');
+    if (genreSelect && genreSelect.options.length <= 1) {
+        console.log('Genres not populated yet, using fallback');
+        populateGenres(FALLBACK_GENRES);
+        if (typeof dataRanges !== 'undefined' && dataRanges && dataRanges.genres) {
+            populateGenres(dataRanges.genres);
+        }
     }
 });
 
@@ -192,3 +254,4 @@ function formatNumber(num) {
         maximumFractionDigits: 2
     });
 }
+
