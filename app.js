@@ -57,20 +57,11 @@ function initializeApp() {
         populateGenres(genresToUse);
         console.log('Genres populated successfully with', genresToUse.length, 'genres');
 
-        // Setup sliders if we have ranges
+        // Update sliders if we have ranges (they're already initialized, but update with correct values)
         if (rangesToUse) {
             setupSliders(rangesToUse);
-        } else {
-            // Use default ranges if data_ranges.js didn't load
-            setupSliders({
-                votes_range: [178, 1791916, 190970],
-                rating_range: [1.9, 9.0, 6.8],
-                runtime_range: [66, 191, 114],
-                metascore_range: [11, 100, 59]
-            });
         }
-
-        // Setup event listeners
+        // Note: Event listeners are already set up in DOMContentLoaded, but ensure they're still there
         setupEventListeners();
         
     } catch (error) {
@@ -115,7 +106,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Populate genres immediately - don't wait for anything
     populateGenresNow();
     
-    // Then try to initialize the rest of the app
+    // Initialize sliders immediately with default values (don't wait for data_ranges.js)
+    setupSlidersWithDefaults();
+    
+    // Setup event listeners immediately
+    setupEventListeners();
+    
+    // Then try to initialize the rest of the app (model, etc.)
     setTimeout(function() {
         initializeApp();
     }, 100);
@@ -140,54 +137,82 @@ setTimeout(function() {
     }
 }, 500);
 
+// Setup sliders with default ranges (called immediately)
+function setupSlidersWithDefaults() {
+    const defaultRanges = {
+        votes_range: [178, 1791916, 190970],
+        rating_range: [1.9, 9.0, 6.8],
+        runtime_range: [66, 191, 114],
+        metascore_range: [11, 100, 59]
+    };
+    setupSliders(defaultRanges);
+}
+
 function setupSliders(ranges) {
+    if (!ranges) {
+        console.warn('No ranges provided, using defaults');
+        setupSlidersWithDefaults();
+        return;
+    }
+    
     // Setup votes slider
     const votesSlider = document.getElementById('votes');
     const votesValue = document.getElementById('votes-value');
-    votesSlider.min = ranges.votes_range[0];
-    votesSlider.max = ranges.votes_range[1];
-    votesSlider.value = ranges.votes_range[2];
-    votesValue.textContent = formatNumber(ranges.votes_range[2]);
-    
-    votesSlider.addEventListener('input', function() {
-        votesValue.textContent = formatNumber(this.value);
-    });
+    if (votesSlider && votesValue) {
+        votesSlider.min = ranges.votes_range[0];
+        votesSlider.max = ranges.votes_range[1];
+        votesSlider.value = ranges.votes_range[2];
+        votesValue.textContent = formatNumber(ranges.votes_range[2]);
+        
+        // Remove existing listeners and add new one
+        votesSlider.oninput = function() {
+            votesValue.textContent = formatNumber(this.value);
+        };
+    }
 
     // Setup rating slider
     const ratingSlider = document.getElementById('rating');
     const ratingValue = document.getElementById('rating-value');
-    ratingSlider.min = ranges.rating_range[0];
-    ratingSlider.max = ranges.rating_range[1];
-    ratingSlider.value = ranges.rating_range[2];
-    ratingValue.textContent = ranges.rating_range[2].toFixed(1);
-    
-    ratingSlider.addEventListener('input', function() {
-        ratingValue.textContent = parseFloat(this.value).toFixed(1);
-    });
+    if (ratingSlider && ratingValue) {
+        ratingSlider.min = ranges.rating_range[0];
+        ratingSlider.max = ranges.rating_range[1];
+        ratingSlider.value = ranges.rating_range[2];
+        ratingValue.textContent = ranges.rating_range[2].toFixed(1);
+        
+        ratingSlider.oninput = function() {
+            ratingValue.textContent = parseFloat(this.value).toFixed(1);
+        };
+    }
 
     // Setup runtime slider
     const runtimeSlider = document.getElementById('runtime');
     const runtimeValue = document.getElementById('runtime-value');
-    runtimeSlider.min = ranges.runtime_range[0];
-    runtimeSlider.max = ranges.runtime_range[1];
-    runtimeSlider.value = ranges.runtime_range[2];
-    runtimeValue.textContent = ranges.runtime_range[2];
-    
-    runtimeSlider.addEventListener('input', function() {
-        runtimeValue.textContent = this.value;
-    });
+    if (runtimeSlider && runtimeValue) {
+        runtimeSlider.min = ranges.runtime_range[0];
+        runtimeSlider.max = ranges.runtime_range[1];
+        runtimeSlider.value = ranges.runtime_range[2];
+        runtimeValue.textContent = ranges.runtime_range[2];
+        
+        runtimeSlider.oninput = function() {
+            runtimeValue.textContent = this.value;
+        };
+    }
 
     // Setup metascore slider
     const metascoreSlider = document.getElementById('metascore');
     const metascoreValue = document.getElementById('metascore-value');
-    metascoreSlider.min = ranges.metascore_range[0];
-    metascoreSlider.max = ranges.metascore_range[1];
-    metascoreSlider.value = ranges.metascore_range[2];
-    metascoreValue.textContent = ranges.metascore_range[2];
+    if (metascoreSlider && metascoreValue) {
+        metascoreSlider.min = ranges.metascore_range[0];
+        metascoreSlider.max = ranges.metascore_range[1];
+        metascoreSlider.value = ranges.metascore_range[2];
+        metascoreValue.textContent = ranges.metascore_range[2];
+        
+        metascoreSlider.oninput = function() {
+            metascoreValue.textContent = this.value;
+        };
+    }
     
-    metascoreSlider.addEventListener('input', function() {
-        metascoreValue.textContent = this.value;
-    });
+    console.log('Sliders initialized successfully');
 }
 
 function populateGenres(genres) {
@@ -238,7 +263,13 @@ function populateGenres(genres) {
 
 function setupEventListeners() {
     const predictBtn = document.getElementById('predict-btn');
-    predictBtn.addEventListener('click', handlePrediction);
+    if (predictBtn) {
+        // Remove existing listener and add new one
+        predictBtn.onclick = handlePrediction;
+        console.log('Predict button event listener attached');
+    } else {
+        console.error('Predict button not found');
+    }
 }
 
 function handlePrediction() {
