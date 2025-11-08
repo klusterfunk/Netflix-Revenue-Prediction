@@ -8,20 +8,37 @@ let dataRanges = null;
 // Initialize the application
 document.addEventListener('DOMContentLoaded', async function() {
     try {
+        // Wait a moment to ensure scripts are loaded
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         // Load model parameters and data ranges
         // These will be loaded from the exported JSON files
-        if (typeof modelParams !== 'undefined') {
+        if (typeof modelParams !== 'undefined' && modelParams) {
             predictor = new MovieRevenuePredictor(modelParams);
+            console.log('Model loaded successfully');
         } else {
             console.error('Model parameters not loaded');
+            document.getElementById('prediction-result').innerHTML = 
+                '<p class="placeholder">Error: Model parameters not loaded. Please check model_params.js</p>';
             return;
         }
 
-        if (typeof dataRanges !== 'undefined') {
-            setupSliders(dataRanges);
-            populateGenres(dataRanges.genres);
+        if (typeof dataRanges !== 'undefined' && dataRanges) {
+            console.log('Data ranges loaded:', dataRanges);
+            console.log('Genres available:', dataRanges.genres);
+            
+            if (dataRanges.genres && Array.isArray(dataRanges.genres) && dataRanges.genres.length > 0) {
+                setupSliders(dataRanges);
+                populateGenres(dataRanges.genres);
+                console.log('Genres populated successfully');
+            } else {
+                console.error('Genres array is empty or invalid:', dataRanges.genres);
+                document.getElementById('genre').innerHTML = '<option value="">No genres available</option>';
+            }
         } else {
             console.error('Data ranges not loaded');
+            document.getElementById('prediction-result').innerHTML = 
+                '<p class="placeholder">Error: Data ranges not loaded. Please check data_ranges.js</p>';
             return;
         }
 
@@ -87,18 +104,35 @@ function setupSliders(ranges) {
 
 function populateGenres(genres) {
     const genreSelect = document.getElementById('genre');
+    
+    if (!genreSelect) {
+        console.error('Genre select element not found');
+        return;
+    }
+    
+    if (!genres || !Array.isArray(genres) || genres.length === 0) {
+        console.error('Invalid genres array:', genres);
+        genreSelect.innerHTML = '<option value="">No genres available</option>';
+        return;
+    }
+    
+    // Clear existing options
     genreSelect.innerHTML = '';
     
+    // Add each genre as an option
     genres.forEach(genre => {
-        const option = document.createElement('option');
-        option.value = genre;
-        option.textContent = genre;
-        genreSelect.appendChild(option);
+        if (genre) {
+            const option = document.createElement('option');
+            option.value = genre;
+            option.textContent = genre;
+            genreSelect.appendChild(option);
+        }
     });
     
     // Set default to first genre
     if (genres.length > 0) {
         genreSelect.value = genres[0];
+        console.log('Genre dropdown populated with', genres.length, 'genres');
     }
 }
 
