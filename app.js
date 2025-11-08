@@ -4,6 +4,7 @@
 
 let predictor = null;
 let dataRanges = null;
+let autoPredictTimeout = null; // For debouncing auto-predictions
 
 // Fallback genres in case data_ranges.js doesn't load
 const FALLBACK_GENRES = [
@@ -115,6 +116,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Then try to initialize the rest of the app (model, etc.)
     setTimeout(function() {
         initializeApp();
+        // Make an initial prediction after everything is loaded
+        setTimeout(function() {
+            if (predictor || (typeof modelParams !== 'undefined' && typeof MovieRevenuePredictor !== 'undefined')) {
+                handlePrediction();
+            }
+        }, 500);
     }, 100);
 });
 
@@ -167,6 +174,7 @@ function setupSliders(ranges) {
         // Remove existing listeners and add new one
         votesSlider.oninput = function() {
             votesValue.textContent = formatNumber(this.value);
+            autoPredict(); // Auto-update prediction
         };
     }
 
@@ -181,6 +189,7 @@ function setupSliders(ranges) {
         
         ratingSlider.oninput = function() {
             ratingValue.textContent = parseFloat(this.value).toFixed(1);
+            autoPredict(); // Auto-update prediction
         };
     }
 
@@ -195,6 +204,7 @@ function setupSliders(ranges) {
         
         runtimeSlider.oninput = function() {
             runtimeValue.textContent = this.value;
+            autoPredict(); // Auto-update prediction
         };
     }
 
@@ -209,6 +219,7 @@ function setupSliders(ranges) {
         
         metascoreSlider.oninput = function() {
             metascoreValue.textContent = this.value;
+            autoPredict(); // Auto-update prediction
         };
     }
     
@@ -264,38 +275,120 @@ function populateGenres(genres) {
 function setupEventListeners() {
     const predictBtn = document.getElementById('predict-btn');
     if (predictBtn) {
-        // Remove existing listener and add new one
-        predictBtn.onclick = handlePrediction;
+        // Use onclick - most reliable method
+        predictBtn.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Predict button clicked');
+            handlePrediction();
+            return false;
+        };
         console.log('Predict button event listener attached');
     } else {
         console.error('Predict button not found');
+        // Try again after a short delay
+        setTimeout(function() {
+            const btn = document.getElementById('predict-btn');
+            if (btn) {
+                btn.onclick = handlePrediction;
+                console.log('Predict button found and listener attached on retry');
+            } else {
+                console.error('Predict button still not found after retry');
+            }
+        }, 500);
+    }
+    
+    // Also listen for genre changes
+    const genreSelect = document.getElementById('genre');
+    if (genreSelect) {
+        genreSelect.onchange = function() {
+            autoPredict(); // Auto-update prediction when genre changes
+        };
     }
 }
 
+// Auto-predict function with debouncing (waits 300ms after user stops moving slider)
+function autoPredict() {
+    // Clear existing timeout
+    if (autoPredictTimeout) {
+        clearTimeout(autoPredictTimeout);
+    }
+    
+    // Wait 300ms after user stops moving slider before predicting
+    autoPredictTimeout = setTimeout(function() {
+        // Only auto-predict if predictor is loaded
+        if (predictor || (typeof modelParams !== 'undefined' && typeof MovieRevenuePredictor !== 'undefined')) {
+            handlePrediction();
+        }
+    }, 300);
+}
+
 function handlePrediction() {
+    // Note: This function is called both from button clicks and auto-predict
+    
+    // Try to initialize predictor if it's not loaded yet
     if (!predictor) {
-        alert('Model not loaded. Please refresh the page.');
-        return;
+        console.log('Predictor not loaded, attempting to initialize...');
+        if (typeof modelParams !== 'undefined' && modelParams && typeof MovieRevenuePredictor !== 'undefined') {
+            try {
+                predictor = new MovieRevenuePredictor(modelParams);
+                console.log('Predictor initialized successfully');
+            } catch (error) {
+                console.error('Error initializing predictor:', error);
+                alert('Model not loaded. Please refresh the page and wait a moment for the model to load.');
+                return;
+            }
+        } else {
+            console.error('Model parameters or MovieRevenuePredictor class not available');
+            alert('Model not loaded. Please refresh the page and wait a moment for the model to load.');
+            return;
+        }
     }
 
     // Get input values
-    const genre = document.getElementById('genre').value;
-    const votes = parseInt(document.getElementById('votes').value);
-    const rating = parseFloat(document.getElementById('rating').value);
-    const runtime = parseInt(document.getElementById('runtime').value);
-    const metascore = parseInt(document.getElementById('metascore').value);
+    const genre = document.getElementById('genre');
+    const votesInput = document.getElementById('votes');
+    const ratingInput = document.getElementById('rating');
+    const runtimeInput = document.getElementById('runtime');
+    const metascoreInput = document.getElementById('metascore');
+    
+    if (!genre || !votesInput || !ratingInput || !runtimeInput || !metascoreInput) {
+        console.error('One or more input elements not found');
+        alert('Error: Could not find input elements. Please refresh the page.');
+        return;
+    }
+    
+    const genreValue = genre.value;
+    const votes = parseInt(votesInput.value);
+    const rating = parseFloat(ratingInput.value);
+    const runtime = parseInt(runtimeInput.value);
+    const metascore = parseInt(metascoreInput.value);
 
     // Validate inputs
-    if (!genre) {
+    if (!genreValue || genreValue === '') {
         alert('Please select a genre');
         return;
     }
+    
+    if (isNaN(votes) || isNaN(rating) || isNaN(runtime) || isNaN(metascore)) {
+        console.error('Invalid input values:', { votes, rating, runtime, metascore });
+        alert('Error: Invalid input values. Please check your inputs.');
+        return;
+    }
 
-    // Make prediction
-    const predictedRevenue = predictor.predict(votes, rating, runtime, metascore, genre);
-
-    // Display result
-    displayPrediction(predictedRevenue, genre, rating, votes, runtime, metascore);
+    console.log('Making prediction with:', { genre: genreValue, votes, rating, runtime, metascore });
+    
+    try {
+        // Make prediction
+        const predictedRevenue = predictor.predict(votes, rating, runtime, metascore, genreValue);
+        console.log('Prediction result:', predictedRevenue);
+        
+        // Display result
+        displayPrediction(predictedRevenue, genreValue, rating, votes, runtime, metascore);
+    } catch (error) {
+        console.error('Error making prediction:', error);
+        alert('Error making prediction: ' + error.message + '. Please check the console for details.');
+    }
 }
 
 function displayPrediction(revenue, genre, rating, votes, runtime, metascore) {
