@@ -70,7 +70,7 @@
                         </div>
                     </div>
 
-                    <button id="predict-btn" class="btn-primary">Predict Revenue</button>
+                    <button id="predict-btn" class="btn-primary" onclick="handlePrediction(); return false;">Predict Revenue</button>
                 </div>
 
                 <div class="result-panel">
@@ -138,6 +138,21 @@
     <script src="data_ranges.js" onerror="console.error('Failed to load data_ranges.js')"></script>
     <script src="predictor.js" onerror="console.error('Failed to load predictor.js')"></script>
     <script src="app.js" onerror="console.error('Failed to load app.js')"></script>
+    <script>
+        // Debug: Test if button and function are accessible
+        window.addEventListener('load', function() {
+            console.log('Page loaded, testing button...');
+            const btn = document.getElementById('predict-btn');
+            console.log('Button found:', !!btn);
+            console.log('handlePrediction function exists:', typeof window.handlePrediction);
+            
+            // Test direct call
+            if (btn) {
+                console.log('Button onclick attribute:', btn.getAttribute('onclick'));
+                console.log('Button onclick property:', btn.onclick);
+            }
+        });
+    </script>
     <script>
         // Emergency fallback: populate genres if they're still not loaded after 1 second
         setTimeout(function() {

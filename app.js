@@ -275,14 +275,18 @@ function populateGenres(genres) {
 function setupEventListeners() {
     const predictBtn = document.getElementById('predict-btn');
     if (predictBtn) {
-        // Use onclick - most reliable method
-        predictBtn.onclick = function(e) {
+        // The button already has onclick in HTML, but let's also add event listener as backup
+        predictBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Predict button clicked');
-            handlePrediction();
+            console.log('Predict button clicked via addEventListener');
+            if (typeof handlePrediction === 'function') {
+                handlePrediction();
+            } else {
+                console.error('handlePrediction is not a function');
+            }
             return false;
-        };
+        });
         console.log('Predict button event listener attached');
     } else {
         console.error('Predict button not found');
@@ -290,7 +294,8 @@ function setupEventListeners() {
         setTimeout(function() {
             const btn = document.getElementById('predict-btn');
             if (btn) {
-                btn.onclick = handlePrediction;
+                btn.onclick = function() { handlePrediction(); return false; };
+                btn.addEventListener('click', handlePrediction);
                 console.log('Predict button found and listener attached on retry');
             } else {
                 console.error('Predict button still not found after retry');
@@ -323,8 +328,9 @@ function autoPredict() {
     }, 300);
 }
 
-function handlePrediction() {
-    // Note: This function is called both from button clicks and auto-predict
+// Make handlePrediction globally accessible
+window.handlePrediction = function() {
+    console.log('handlePrediction called');
     
     // Try to initialize predictor if it's not loaded yet
     if (!predictor) {
@@ -389,7 +395,10 @@ function handlePrediction() {
         console.error('Error making prediction:', error);
         alert('Error making prediction: ' + error.message + '. Please check the console for details.');
     }
-}
+};
+
+// Also keep the local reference
+var handlePrediction = window.handlePrediction;
 
 function displayPrediction(revenue, genre, rating, votes, runtime, metascore) {
     const resultDiv = document.getElementById('prediction-result');
