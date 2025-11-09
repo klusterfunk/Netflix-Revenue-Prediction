@@ -141,16 +141,36 @@
     <script>
         // Debug: Test if button and function are accessible
         window.addEventListener('load', function() {
-            console.log('Page loaded, testing button...');
+            console.log('=== PAGE FULLY LOADED ===');
             const btn = document.getElementById('predict-btn');
             console.log('Button found:', !!btn);
+            console.log('Button ID:', btn ? btn.id : 'NOT FOUND');
             console.log('handlePrediction function exists:', typeof window.handlePrediction);
+            console.log('handlePrediction type:', typeof window.handlePrediction);
             
             // Test direct call
             if (btn) {
                 console.log('Button onclick attribute:', btn.getAttribute('onclick'));
                 console.log('Button onclick property:', btn.onclick);
+                console.log('Button class:', btn.className);
+                
+                // Test if we can call the function directly
+                if (typeof window.handlePrediction === 'function') {
+                    console.log('✓ handlePrediction is a function and can be called');
+                } else {
+                    console.error('✗ handlePrediction is NOT a function!');
+                }
+            } else {
+                console.error('✗ Predict button NOT FOUND in DOM!');
             }
+            
+            // Check all required scripts
+            console.log('Script status:', {
+                modelParams: typeof modelParams !== 'undefined' ? 'LOADED' : 'MISSING',
+                dataRanges: typeof dataRanges !== 'undefined' ? 'LOADED' : 'MISSING',
+                MovieRevenuePredictor: typeof MovieRevenuePredictor !== 'undefined' ? 'LOADED' : 'MISSING',
+                predictor: predictor ? 'INITIALIZED' : 'NOT INITIALIZED'
+            });
         });
     </script>
     <script>
