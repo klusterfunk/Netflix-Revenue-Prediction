@@ -132,51 +132,9 @@
         </footer>
     </div>
 
-    <script>
-        // Define handlePrediction stub immediately so onclick handlers work
-        window.handlePrediction = function() {
-            if (typeof window.handlePredictionFull === 'function') {
-                return window.handlePredictionFull();
-            }
-        };
-    </script>
     <script src="model_params.js"></script>
     <script src="data_ranges.js"></script>
     <script src="predictor.js"></script>
     <script src="app.js"></script>
-    <script>
-        // After app.js loads, replace the stub with the real function
-        if (typeof window.handlePrediction === 'function' && window.handlePrediction.toString().includes('stub')) {
-            // Keep the real function if it loaded
-            if (typeof window.handlePredictionFull !== 'undefined') {
-                window.handlePrediction = window.handlePredictionFull;
-            }
-        }
-    </script>
-    <script>
-        // Emergency fallback: populate genres if they're still not loaded after 1 second
-        setTimeout(function() {
-            var genreSelect = document.getElementById('genre');
-            // Only run if there's still a "Loading..." or empty state
-            if (genreSelect && (
-                genreSelect.options.length <= 1 || 
-                genreSelect.options[0].value === '' || 
-                genreSelect.options[0].textContent === 'Loading...' ||
-                (genreSelect.options.length === 1 && genreSelect.options[0].textContent === 'Select Genre...')
-            )) {
-                var fallbackGenres = ['Action', 'Adventure', 'Animation', 'Biography', 'Comedy', 'Crime', 'Drama', 'Fantasy', 'Horror', 'Mystery', 'Romance', 'Sci-Fi', 'Thriller'];
-                genreSelect.innerHTML = '';
-                fallbackGenres.forEach(function(genre) {
-                    var option = document.createElement('option');
-                    option.value = genre;
-                    option.textContent = genre;
-                    genreSelect.appendChild(option);
-                });
-                if (fallbackGenres.length > 0) {
-                    genreSelect.value = fallbackGenres[0];
-                }
-            }
-        }, 1000);
-    </script>
 </body>
 </html>
