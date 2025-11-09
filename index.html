@@ -137,18 +137,15 @@
     <script>
         // Define handlePrediction stub immediately so onclick handlers work
         window.handlePrediction = function() {
-            console.log('handlePrediction stub called - waiting for full function to load');
             if (typeof window.handlePredictionFull === 'function') {
                 return window.handlePredictionFull();
-            } else {
-                alert('Please wait for the page to fully load, then try again.');
             }
         };
     </script>
-    <script src="model_params.js" onerror="console.error('Failed to load model_params.js')"></script>
-    <script src="data_ranges.js" onerror="console.error('Failed to load data_ranges.js')"></script>
-    <script src="predictor.js" onerror="console.error('Failed to load predictor.js')"></script>
-    <script src="app.js" onerror="console.error('Failed to load app.js')"></script>
+    <script src="model_params.js"></script>
+    <script src="data_ranges.js"></script>
+    <script src="predictor.js"></script>
+    <script src="app.js"></script>
     <script>
         // After app.js loads, replace the stub with the real function
         if (typeof window.handlePrediction === 'function' && window.handlePrediction.toString().includes('stub')) {
@@ -157,41 +154,6 @@
                 window.handlePrediction = window.handlePredictionFull;
             }
         }
-    </script>
-    <script>
-        // Debug: Test if button and function are accessible
-        window.addEventListener('load', function() {
-            console.log('=== PAGE FULLY LOADED ===');
-            const btn = document.getElementById('predict-btn');
-            console.log('Button found:', !!btn);
-            console.log('Button ID:', btn ? btn.id : 'NOT FOUND');
-            console.log('handlePrediction function exists:', typeof window.handlePrediction);
-            console.log('handlePrediction type:', typeof window.handlePrediction);
-            
-            // Test direct call
-            if (btn) {
-                console.log('Button onclick attribute:', btn.getAttribute('onclick'));
-                console.log('Button onclick property:', btn.onclick);
-                console.log('Button class:', btn.className);
-                
-                // Test if we can call the function directly
-                if (typeof window.handlePrediction === 'function') {
-                    console.log('✓ handlePrediction is a function and can be called');
-                } else {
-                    console.error('✗ handlePrediction is NOT a function!');
-                }
-            } else {
-                console.error('✗ Predict button NOT FOUND in DOM!');
-            }
-            
-            // Check all required scripts
-            console.log('Script status:', {
-                modelParams: typeof modelParams !== 'undefined' ? 'LOADED' : 'MISSING',
-                dataRanges: typeof dataRanges !== 'undefined' ? 'LOADED' : 'MISSING',
-                MovieRevenuePredictor: typeof MovieRevenuePredictor !== 'undefined' ? 'LOADED' : 'MISSING',
-                predictor: predictor ? 'INITIALIZED' : 'NOT INITIALIZED'
-            });
-        });
     </script>
     <script>
         // Emergency fallback: populate genres if they're still not loaded after 1 second
@@ -204,7 +166,6 @@
                 genreSelect.options[0].textContent === 'Loading...' ||
                 (genreSelect.options.length === 1 && genreSelect.options[0].textContent === 'Select Genre...')
             )) {
-                console.log('Emergency fallback: populating genres');
                 var fallbackGenres = ['Action', 'Adventure', 'Animation', 'Biography', 'Comedy', 'Crime', 'Drama', 'Fantasy', 'Horror', 'Mystery', 'Romance', 'Sci-Fi', 'Thriller'];
                 genreSelect.innerHTML = '';
                 fallbackGenres.forEach(function(genre) {

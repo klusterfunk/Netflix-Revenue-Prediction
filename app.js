@@ -5,122 +5,49 @@
 // Define handlePrediction early so it's available for inline onclick handlers
 // Use a different name first, then assign to window.handlePrediction to avoid conflicts
 window.handlePredictionFull = function handlePrediction() {
-    console.log('=== handlePrediction CALLED ===');
-    
     // Check if predictor exists (will be defined later in the script)
     if (typeof predictor === 'undefined') {
         window.predictor = null;
     }
     
-    // Try to initialize predictor if it's not loaded yet
+    // Initialize predictor if it's not loaded yet
     if (!window.predictor) {
-        console.log('Predictor not loaded, attempting to initialize...');
-        if (typeof modelParams !== 'undefined' && modelParams && typeof MovieRevenuePredictor !== 'undefined') {
-            try {
-                console.log('Creating new MovieRevenuePredictor...');
-                window.predictor = new MovieRevenuePredictor(modelParams);
-                console.log('✓ Predictor initialized successfully');
-            } catch (error) {
-                console.error('✗ Error initializing predictor:', error);
-                console.error('Error stack:', error.stack);
-                alert('Model not loaded. Error: ' + error.message + '\n\nCheck console for details.');
-                return;
-            }
-        } else {
-            console.error('✗ Model parameters or MovieRevenuePredictor class not available');
-            console.error('modelParams type:', typeof modelParams);
-            console.error('MovieRevenuePredictor type:', typeof MovieRevenuePredictor);
-            alert('Model not loaded. Please refresh the page and wait a moment for the model to load.\n\nCheck console (F12) for details.');
-            return;
-        }
-    } else {
-        console.log('✓ Predictor already loaded');
+        window.predictor = new MovieRevenuePredictor(modelParams);
     }
 
     // Get input values
-    console.log('Getting input values...');
     const genre = document.getElementById('genre');
     const votesInput = document.getElementById('votes');
     const ratingInput = document.getElementById('rating');
     const runtimeInput = document.getElementById('runtime');
     const metascoreInput = document.getElementById('metascore');
     
-    console.log('Input elements found:', {
-        genre: !!genre,
-        votes: !!votesInput,
-        rating: !!ratingInput,
-        runtime: !!runtimeInput,
-        metascore: !!metascoreInput
-    });
-    
-    if (!genre || !votesInput || !ratingInput || !runtimeInput || !metascoreInput) {
-        console.error('✗ One or more input elements not found');
-        alert('Error: Could not find input elements. Please refresh the page.');
-        return;
-    }
-    
     const genreValue = genre.value;
     const votes = parseInt(votesInput.value);
     const rating = parseFloat(ratingInput.value);
     const runtime = parseInt(runtimeInput.value);
     const metascore = parseInt(metascoreInput.value);
-
-    console.log('Input values:', { genreValue, votes, rating, runtime, metascore });
-
-    // Validate inputs
-    if (!genreValue || genreValue === '') {
-        alert('Please select a genre');
-        return;
-    }
     
-    if (isNaN(votes) || isNaN(rating) || isNaN(runtime) || isNaN(metascore)) {
-        console.error('✗ Invalid input values:', { votes, rating, runtime, metascore });
-        alert('Error: Invalid input values. Please check your inputs.');
-        return;
-    }
-
-    console.log('✓ All inputs valid. Making prediction...');
-    console.log('Prediction inputs:', { genre: genreValue, votes, rating, runtime, metascore });
+    // Make prediction
+    const predictedRevenue = window.predictor.predict(votes, rating, runtime, metascore, genreValue);
     
-    try {
-        // Make prediction
-        console.log('Calling predictor.predict()...');
-        const predictedRevenue = window.predictor.predict(votes, rating, runtime, metascore, genreValue);
-        console.log('✓ Prediction successful!');
-        console.log('Predicted revenue:', predictedRevenue);
-        
-        // Display result
-        console.log('Displaying prediction result...');
-        if (typeof displayPrediction === 'function') {
-            displayPrediction(predictedRevenue, genreValue, rating, votes, runtime, metascore);
-        } else {
-            // Fallback display if function not loaded yet
-            const resultDiv = document.getElementById('prediction-result');
-            if (resultDiv) {
-                resultDiv.innerHTML = `<div class="prediction-label">Predicted Box Office Revenue</div><div class="prediction-value">$${predictedRevenue.toFixed(2)}M</div>`;
-            }
-        }
-        console.log('✓ Prediction displayed successfully');
-    } catch (error) {
-        console.error('✗ Error making prediction:', error);
-        console.error('Error name:', error.name);
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
-        alert('Error making prediction: ' + error.message + '\n\nCheck console (F12) for details.');
+    // Display result
+    if (typeof displayPrediction === 'function') {
+        displayPrediction(predictedRevenue, genreValue, rating, votes, runtime, metascore);
+    } else {
+        // Fallback display if function not loaded yet
+        const resultDiv = document.getElementById('prediction-result');
+        resultDiv.innerHTML = `<div class="prediction-label">Predicted Box Office Revenue</div><div class="prediction-value">$${predictedRevenue.toFixed(2)}M</div>`;
     }
-    console.log('=== handlePrediction COMPLETE ===');
 };
 
 // Assign to window.handlePrediction after defining (replace stub if it exists)
 if (typeof window.handlePrediction === 'function') {
     // Replace the stub with the real function
     window.handlePrediction = window.handlePredictionFull;
-    console.log('handlePrediction stub replaced with full function');
 } else {
     window.handlePrediction = window.handlePredictionFull;
-    console.log('handlePrediction function assigned to window');
 }
-console.log('handlePrediction function type:', typeof window.handlePrediction);
 
 let predictor = null;
 // Note: dataRanges is declared in data_ranges.js, don't redeclare it here
@@ -145,61 +72,39 @@ const FALLBACK_GENRES = [
 
 // Initialize the application
 function initializeApp() {
-    try {
-        // Load model parameters and data ranges
-        // These will be loaded from the exported JSON files
-        if (typeof modelParams !== 'undefined' && modelParams) {
-            predictor = new MovieRevenuePredictor(modelParams);
-            window.predictor = predictor; // Also store in window for global access
-            console.log('Model loaded successfully');
-        } else {
-            console.error('Model parameters not loaded');
-            // Don't return - still try to populate genres
-        }
-
-        // Try to get genres from dataRanges, fallback to FALLBACK_GENRES
-        let genresToUse = FALLBACK_GENRES;
-        let rangesToUse = null;
-
-        if (typeof dataRanges !== 'undefined' && dataRanges) {
-            console.log('Data ranges loaded:', dataRanges);
-            rangesToUse = dataRanges;
-            
-            if (dataRanges.genres && Array.isArray(dataRanges.genres) && dataRanges.genres.length > 0) {
-                genresToUse = dataRanges.genres;
-                console.log('Using genres from data_ranges.js:', genresToUse);
-            } else {
-                console.warn('Genres array is empty or invalid, using fallback');
-            }
-        } else {
-            console.warn('Data ranges not loaded, using fallback genres');
-        }
-
-        // Always populate genres (either from dataRanges or fallback)
-        populateGenres(genresToUse);
-        console.log('Genres populated successfully with', genresToUse.length, 'genres');
-
-        // Update sliders if we have ranges (they're already initialized, but update with correct values)
-        if (rangesToUse) {
-            setupSliders(rangesToUse);
-        }
-        // Note: Event listeners are already set up in DOMContentLoaded, but ensure they're still there
-        setupEventListeners();
-        
-    } catch (error) {
-        console.error('Error initializing app:', error);
-        // Still try to populate genres even if there's an error
-        populateGenres(FALLBACK_GENRES);
+    // Load model parameters and data ranges
+    // These will be loaded from the exported JSON files
+    if (typeof modelParams !== 'undefined' && modelParams) {
+        predictor = new MovieRevenuePredictor(modelParams);
+        window.predictor = predictor; // Also store in window for global access
     }
+
+    // Get genres from dataRanges, fallback to FALLBACK_GENRES
+    let genresToUse = FALLBACK_GENRES;
+    let rangesToUse = null;
+
+    if (typeof dataRanges !== 'undefined' && dataRanges) {
+        rangesToUse = dataRanges;
+        
+        if (dataRanges.genres && Array.isArray(dataRanges.genres) && dataRanges.genres.length > 0) {
+            genresToUse = dataRanges.genres;
+        }
+    }
+
+    // Always populate genres (either from dataRanges or fallback)
+    populateGenres(genresToUse);
+
+    // Update sliders if we have ranges (they're already initialized, but update with correct values)
+    if (rangesToUse) {
+        setupSliders(rangesToUse);
+    }
+    // Note: Event listeners are already set up in DOMContentLoaded, but ensure they're still there
+    setupEventListeners();
 }
 
 // Populate genres immediately - don't wait for anything
 function populateGenresNow() {
     const genreSelect = document.getElementById('genre');
-    if (!genreSelect) {
-        console.error('Genre select element not found');
-        return;
-    }
     
     // Check if genres are already in HTML (hardcoded)
     const hasGenresInHTML = genreSelect.options.length > 1 && 
@@ -207,7 +112,6 @@ function populateGenresNow() {
                             genreSelect.options[0].textContent !== 'Select Genre...';
     
     if (hasGenresInHTML) {
-        console.log('Genres already in HTML, no need to populate');
         return;
     }
     
@@ -215,9 +119,6 @@ function populateGenresNow() {
     let genresToUse = FALLBACK_GENRES;
     if (typeof dataRanges !== 'undefined' && dataRanges && dataRanges.genres && Array.isArray(dataRanges.genres) && dataRanges.genres.length > 0) {
         genresToUse = dataRanges.genres;
-        console.log('Using genres from data_ranges.js');
-    } else {
-        console.log('Using fallback genres');
     }
     
     populateGenres(genresToUse);
@@ -225,13 +126,6 @@ function populateGenresNow() {
 
 // Wait for DOM and scripts to be ready
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('=== DOMContentLoaded fired ===');
-    console.log('Scripts loaded:', {
-        modelParams: typeof modelParams !== 'undefined',
-        dataRanges: typeof dataRanges !== 'undefined',
-        MovieRevenuePredictor: typeof MovieRevenuePredictor !== 'undefined'
-    });
-    
     // Populate genres immediately - don't wait for anything
     populateGenresNow();
     
@@ -243,20 +137,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Then try to initialize the rest of the app (model, etc.)
     setTimeout(function() {
-        console.log('Initializing app...');
         initializeApp();
         // Make an initial prediction after everything is loaded
         setTimeout(function() {
-            console.log('Attempting initial prediction...');
             if (predictor || (typeof modelParams !== 'undefined' && typeof MovieRevenuePredictor !== 'undefined')) {
-                console.log('Conditions met, calling handlePrediction...');
                 if (typeof window.handlePrediction === 'function') {
-                window.handlePrediction();
-            } else if (typeof window.handlePredictionFull === 'function') {
-                window.handlePredictionFull();
-            }
-            } else {
-                console.log('Conditions not met for initial prediction');
+                    window.handlePrediction();
+                } else if (typeof window.handlePredictionFull === 'function') {
+                    window.handlePredictionFull();
+                }
             }
         }, 500);
     }, 100);
@@ -267,7 +156,6 @@ window.addEventListener('load', function() {
     // Double-check genres are populated
     const genreSelect = document.getElementById('genre');
     if (genreSelect && (genreSelect.options.length <= 1 || genreSelect.options[0].value === '')) {
-        console.log('Genres not populated yet, populating now');
         populateGenresNow();
     }
 });
@@ -276,7 +164,6 @@ window.addEventListener('load', function() {
 setTimeout(function() {
     const genreSelect = document.getElementById('genre');
     if (genreSelect && (genreSelect.options.length <= 1 || genreSelect.options[0].value === '')) {
-        console.log('Final check: populating genres');
         populateGenresNow();
     }
 }, 500);
@@ -294,7 +181,6 @@ function setupSlidersWithDefaults() {
 
 function setupSliders(ranges) {
     if (!ranges) {
-        console.warn('No ranges provided, using defaults');
         setupSlidersWithDefaults();
         return;
     }
@@ -360,25 +246,10 @@ function setupSliders(ranges) {
         };
     }
     
-    console.log('Sliders initialized successfully');
 }
 
 function populateGenres(genres) {
     const genreSelect = document.getElementById('genre');
-    
-    if (!genreSelect) {
-        console.error('Genre select element not found');
-        return;
-    }
-    
-    if (!genres || !Array.isArray(genres) || genres.length === 0) {
-        console.error('Invalid genres array:', genres);
-        // Don't clear if we already have genres from HTML
-        if (genreSelect.options.length <= 1) {
-            genreSelect.innerHTML = '<option value="">No genres available</option>';
-        }
-        return;
-    }
     
     // Check if genres are already populated (from HTML)
     const currentOptions = Array.from(genreSelect.options).map(opt => opt.value);
@@ -402,60 +273,29 @@ function populateGenres(genres) {
         // Set default to first genre
         if (genres.length > 0) {
             genreSelect.value = genres[0];
-            console.log('Genre dropdown populated with', genres.length, 'genres');
         }
-    } else {
-        console.log('Genres already populated, skipping update');
     }
 }
 
 function setupEventListeners() {
     const predictBtn = document.getElementById('predict-btn');
-    if (predictBtn) {
-        // The button already has onclick in HTML, but let's also add event listener as backup
-        predictBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('Predict button clicked via addEventListener');
-            if (typeof window.handlePrediction === 'function') {
-                window.handlePrediction();
-            } else if (typeof window.handlePredictionFull === 'function') {
-                window.handlePredictionFull();
-            } else {
-                console.error('handlePrediction is not a function');
-            }
-            return false;
-        });
-        console.log('Predict button event listener attached');
-    } else {
-        console.error('Predict button not found');
-        // Try again after a short delay
-        setTimeout(function() {
-            const btn = document.getElementById('predict-btn');
-            if (btn) {
-                btn.onclick = function() { 
-                    if (typeof window.handlePrediction === 'function') {
-                        window.handlePrediction();
-                    } else if (typeof window.handlePredictionFull === 'function') {
-                        window.handlePredictionFull();
-                    }
-                    return false; 
-                };
-                btn.addEventListener('click', window.handlePrediction);
-                console.log('Predict button found and listener attached on retry');
-            } else {
-                console.error('Predict button still not found after retry');
-            }
-        }, 500);
-    }
+    // The button already has onclick in HTML, but let's also add event listener as backup
+    predictBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof window.handlePrediction === 'function') {
+            window.handlePrediction();
+        } else if (typeof window.handlePredictionFull === 'function') {
+            window.handlePredictionFull();
+        }
+        return false;
+    });
     
     // Also listen for genre changes
     const genreSelect = document.getElementById('genre');
-    if (genreSelect) {
-        genreSelect.onchange = function() {
-            autoPredict(); // Auto-update prediction when genre changes
-        };
-    }
+    genreSelect.onchange = function() {
+        autoPredict(); // Auto-update prediction when genre changes
+    };
 }
 
 // Auto-predict function with debouncing (waits 300ms after user stops moving slider)
@@ -481,19 +321,11 @@ function autoPredict() {
 // handlePrediction is now defined at the top of the file
 
 function displayPrediction(revenue, genre, rating, votes, runtime, metascore) {
-    console.log('displayPrediction called with:', { revenue, genre, rating, votes, runtime, metascore });
-    
     const resultDiv = document.getElementById('prediction-result');
-    if (!resultDiv) {
-        console.error('✗ prediction-result div not found!');
-        alert('Error: Could not find result display area.');
-        return;
-    }
     
     resultDiv.className = 'prediction-box animated';
     
     const formattedRevenue = formatNumber(revenue.toFixed(2));
-    console.log('Formatted revenue:', formattedRevenue);
     
     resultDiv.innerHTML = `
         <div class="prediction-label">Predicted Box Office Revenue</div>
@@ -508,14 +340,12 @@ function displayPrediction(revenue, genre, rating, votes, runtime, metascore) {
     const summaryMetascore = document.getElementById('summary-metascore');
     const inputSummary = document.getElementById('input-summary');
     
-    if (summaryGenre) summaryGenre.textContent = genre;
-    if (summaryRating) summaryRating.textContent = rating.toFixed(1);
-    if (summaryVotes) summaryVotes.textContent = formatNumber(votes);
-    if (summaryRuntime) summaryRuntime.textContent = `${runtime} min`;
-    if (summaryMetascore) summaryMetascore.textContent = metascore;
-    if (inputSummary) inputSummary.style.display = 'block';
-    
-    console.log('✓ Prediction displayed successfully');
+    summaryGenre.textContent = genre;
+    summaryRating.textContent = rating.toFixed(1);
+    summaryVotes.textContent = formatNumber(votes);
+    summaryRuntime.textContent = `${runtime} min`;
+    summaryMetascore.textContent = metascore;
+    inputSummary.style.display = 'block';
 }
 
 function formatNumber(num) {
