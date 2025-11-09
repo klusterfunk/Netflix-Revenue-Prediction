@@ -278,20 +278,7 @@ function populateGenres(genres) {
 }
 
 function setupEventListeners() {
-    const predictBtn = document.getElementById('predict-btn');
-    // The button already has onclick in HTML, but let's also add event listener as backup
-    predictBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (typeof window.handlePrediction === 'function') {
-            window.handlePrediction();
-        } else if (typeof window.handlePredictionFull === 'function') {
-            window.handlePredictionFull();
-        }
-        return false;
-    });
-    
-    // Also listen for genre changes
+    // Listen for genre changes
     const genreSelect = document.getElementById('genre');
     genreSelect.onchange = function() {
         autoPredict(); // Auto-update prediction when genre changes
