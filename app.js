@@ -2,8 +2,116 @@
  * Main application logic
  */
 
+// Define handlePrediction early so it's available for inline onclick handlers
+window.handlePrediction = function handlePrediction() {
+    console.log('=== handlePrediction CALLED ===');
+    
+    // Check if predictor exists (will be defined later in the script)
+    if (typeof predictor === 'undefined') {
+        window.predictor = null;
+    }
+    
+    // Try to initialize predictor if it's not loaded yet
+    if (!window.predictor) {
+        console.log('Predictor not loaded, attempting to initialize...');
+        if (typeof modelParams !== 'undefined' && modelParams && typeof MovieRevenuePredictor !== 'undefined') {
+            try {
+                console.log('Creating new MovieRevenuePredictor...');
+                window.predictor = new MovieRevenuePredictor(modelParams);
+                console.log('✓ Predictor initialized successfully');
+            } catch (error) {
+                console.error('✗ Error initializing predictor:', error);
+                console.error('Error stack:', error.stack);
+                alert('Model not loaded. Error: ' + error.message + '\n\nCheck console for details.');
+                return;
+            }
+        } else {
+            console.error('✗ Model parameters or MovieRevenuePredictor class not available');
+            console.error('modelParams type:', typeof modelParams);
+            console.error('MovieRevenuePredictor type:', typeof MovieRevenuePredictor);
+            alert('Model not loaded. Please refresh the page and wait a moment for the model to load.\n\nCheck console (F12) for details.');
+            return;
+        }
+    } else {
+        console.log('✓ Predictor already loaded');
+    }
+
+    // Get input values
+    console.log('Getting input values...');
+    const genre = document.getElementById('genre');
+    const votesInput = document.getElementById('votes');
+    const ratingInput = document.getElementById('rating');
+    const runtimeInput = document.getElementById('runtime');
+    const metascoreInput = document.getElementById('metascore');
+    
+    console.log('Input elements found:', {
+        genre: !!genre,
+        votes: !!votesInput,
+        rating: !!ratingInput,
+        runtime: !!runtimeInput,
+        metascore: !!metascoreInput
+    });
+    
+    if (!genre || !votesInput || !ratingInput || !runtimeInput || !metascoreInput) {
+        console.error('✗ One or more input elements not found');
+        alert('Error: Could not find input elements. Please refresh the page.');
+        return;
+    }
+    
+    const genreValue = genre.value;
+    const votes = parseInt(votesInput.value);
+    const rating = parseFloat(ratingInput.value);
+    const runtime = parseInt(runtimeInput.value);
+    const metascore = parseInt(metascoreInput.value);
+
+    console.log('Input values:', { genreValue, votes, rating, runtime, metascore });
+
+    // Validate inputs
+    if (!genreValue || genreValue === '') {
+        alert('Please select a genre');
+        return;
+    }
+    
+    if (isNaN(votes) || isNaN(rating) || isNaN(runtime) || isNaN(metascore)) {
+        console.error('✗ Invalid input values:', { votes, rating, runtime, metascore });
+        alert('Error: Invalid input values. Please check your inputs.');
+        return;
+    }
+
+    console.log('✓ All inputs valid. Making prediction...');
+    console.log('Prediction inputs:', { genre: genreValue, votes, rating, runtime, metascore });
+    
+    try {
+        // Make prediction
+        console.log('Calling predictor.predict()...');
+        const predictedRevenue = window.predictor.predict(votes, rating, runtime, metascore, genreValue);
+        console.log('✓ Prediction successful!');
+        console.log('Predicted revenue:', predictedRevenue);
+        
+        // Display result
+        console.log('Displaying prediction result...');
+        if (typeof displayPrediction === 'function') {
+            displayPrediction(predictedRevenue, genreValue, rating, votes, runtime, metascore);
+        } else {
+            // Fallback display if function not loaded yet
+            const resultDiv = document.getElementById('prediction-result');
+            if (resultDiv) {
+                resultDiv.innerHTML = `<div class="prediction-label">Predicted Box Office Revenue</div><div class="prediction-value">$${predictedRevenue.toFixed(2)}M</div>`;
+            }
+        }
+        console.log('✓ Prediction displayed successfully');
+    } catch (error) {
+        console.error('✗ Error making prediction:', error);
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        alert('Error making prediction: ' + error.message + '\n\nCheck console (F12) for details.');
+    }
+    console.log('=== handlePrediction COMPLETE ===');
+};
+
 let predictor = null;
-let dataRanges = null;
+// Note: dataRanges is declared in data_ranges.js, don't redeclare it here
 let autoPredictTimeout = null; // For debouncing auto-predictions
 
 // Fallback genres in case data_ranges.js doesn't load
@@ -30,6 +138,7 @@ function initializeApp() {
         // These will be loaded from the exported JSON files
         if (typeof modelParams !== 'undefined' && modelParams) {
             predictor = new MovieRevenuePredictor(modelParams);
+            window.predictor = predictor; // Also store in window for global access
             console.log('Model loaded successfully');
         } else {
             console.error('Model parameters not loaded');
@@ -129,7 +238,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Attempting initial prediction...');
             if (predictor || (typeof modelParams !== 'undefined' && typeof MovieRevenuePredictor !== 'undefined')) {
                 console.log('Conditions met, calling handlePrediction...');
-                handlePrediction();
+                window.handlePrediction();
             } else {
                 console.log('Conditions not met for initial prediction');
             }
@@ -292,8 +401,8 @@ function setupEventListeners() {
             e.preventDefault();
             e.stopPropagation();
             console.log('Predict button clicked via addEventListener');
-            if (typeof handlePrediction === 'function') {
-                handlePrediction();
+            if (typeof window.handlePrediction === 'function') {
+                window.handlePrediction();
             } else {
                 console.error('handlePrediction is not a function');
             }
@@ -306,8 +415,8 @@ function setupEventListeners() {
         setTimeout(function() {
             const btn = document.getElementById('predict-btn');
             if (btn) {
-                btn.onclick = function() { handlePrediction(); return false; };
-                btn.addEventListener('click', handlePrediction);
+                btn.onclick = function() { window.handlePrediction(); return false; };
+                btn.addEventListener('click', window.handlePrediction);
                 console.log('Predict button found and listener attached on retry');
             } else {
                 console.error('Predict button still not found after retry');
@@ -334,112 +443,13 @@ function autoPredict() {
     // Wait 300ms after user stops moving slider before predicting
     autoPredictTimeout = setTimeout(function() {
         // Only auto-predict if predictor is loaded
-        if (predictor || (typeof modelParams !== 'undefined' && typeof MovieRevenuePredictor !== 'undefined')) {
-            handlePrediction();
+        if (window.predictor || predictor || (typeof modelParams !== 'undefined' && typeof MovieRevenuePredictor !== 'undefined')) {
+            window.handlePrediction();
         }
     }, 300);
 }
 
-// Make handlePrediction globally accessible
-window.handlePrediction = function() {
-    console.log('=== handlePrediction CALLED ===');
-    console.log('Predictor exists:', !!predictor);
-    console.log('modelParams exists:', typeof modelParams !== 'undefined');
-    console.log('MovieRevenuePredictor exists:', typeof MovieRevenuePredictor !== 'undefined');
-    
-    // Try to initialize predictor if it's not loaded yet
-    if (!predictor) {
-        console.log('Predictor not loaded, attempting to initialize...');
-        if (typeof modelParams !== 'undefined' && modelParams && typeof MovieRevenuePredictor !== 'undefined') {
-            try {
-                console.log('Creating new MovieRevenuePredictor...');
-                predictor = new MovieRevenuePredictor(modelParams);
-                console.log('✓ Predictor initialized successfully');
-            } catch (error) {
-                console.error('✗ Error initializing predictor:', error);
-                console.error('Error stack:', error.stack);
-                alert('Model not loaded. Error: ' + error.message + '\n\nCheck console for details.');
-                return;
-            }
-        } else {
-            console.error('✗ Model parameters or MovieRevenuePredictor class not available');
-            console.error('modelParams type:', typeof modelParams);
-            console.error('MovieRevenuePredictor type:', typeof MovieRevenuePredictor);
-            alert('Model not loaded. Please refresh the page and wait a moment for the model to load.\n\nCheck console (F12) for details.');
-            return;
-        }
-    } else {
-        console.log('✓ Predictor already loaded');
-    }
-
-    // Get input values
-    console.log('Getting input values...');
-    const genre = document.getElementById('genre');
-    const votesInput = document.getElementById('votes');
-    const ratingInput = document.getElementById('rating');
-    const runtimeInput = document.getElementById('runtime');
-    const metascoreInput = document.getElementById('metascore');
-    
-    console.log('Input elements found:', {
-        genre: !!genre,
-        votes: !!votesInput,
-        rating: !!ratingInput,
-        runtime: !!runtimeInput,
-        metascore: !!metascoreInput
-    });
-    
-    if (!genre || !votesInput || !ratingInput || !runtimeInput || !metascoreInput) {
-        console.error('✗ One or more input elements not found');
-        alert('Error: Could not find input elements. Please refresh the page.');
-        return;
-    }
-    
-    const genreValue = genre.value;
-    const votes = parseInt(votesInput.value);
-    const rating = parseFloat(ratingInput.value);
-    const runtime = parseInt(runtimeInput.value);
-    const metascore = parseInt(metascoreInput.value);
-
-    console.log('Input values:', { genreValue, votes, rating, runtime, metascore });
-
-    // Validate inputs
-    if (!genreValue || genreValue === '') {
-        alert('Please select a genre');
-        return;
-    }
-    
-    if (isNaN(votes) || isNaN(rating) || isNaN(runtime) || isNaN(metascore)) {
-        console.error('✗ Invalid input values:', { votes, rating, runtime, metascore });
-        alert('Error: Invalid input values. Please check your inputs.');
-        return;
-    }
-
-    console.log('✓ All inputs valid. Making prediction...');
-    console.log('Prediction inputs:', { genre: genreValue, votes, rating, runtime, metascore });
-    
-    try {
-        // Make prediction
-        console.log('Calling predictor.predict()...');
-        const predictedRevenue = predictor.predict(votes, rating, runtime, metascore, genreValue);
-        console.log('✓ Prediction successful!');
-        console.log('Predicted revenue:', predictedRevenue);
-        
-        // Display result
-        console.log('Displaying prediction result...');
-        displayPrediction(predictedRevenue, genreValue, rating, votes, runtime, metascore);
-        console.log('✓ Prediction displayed successfully');
-    } catch (error) {
-        console.error('✗ Error making prediction:', error);
-        console.error('Error name:', error.name);
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
-        alert('Error making prediction: ' + error.message + '\n\nCheck console (F12) for details.');
-    }
-    console.log('=== handlePrediction COMPLETE ===');
-};
-
-// Also keep the local reference
-var handlePrediction = window.handlePrediction;
+// handlePrediction is now defined at the top of the file
 
 function displayPrediction(revenue, genre, rating, votes, runtime, metascore) {
     console.log('displayPrediction called with:', { revenue, genre, rating, votes, runtime, metascore });
