@@ -3,7 +3,8 @@
  */
 
 // Define handlePrediction early so it's available for inline onclick handlers
-window.handlePrediction = function handlePrediction() {
+// Use a different name first, then assign to window.handlePrediction to avoid conflicts
+window.handlePredictionFull = function handlePrediction() {
     console.log('=== handlePrediction CALLED ===');
     
     // Check if predictor exists (will be defined later in the script)
@@ -109,6 +110,17 @@ window.handlePrediction = function handlePrediction() {
     }
     console.log('=== handlePrediction COMPLETE ===');
 };
+
+// Assign to window.handlePrediction after defining (replace stub if it exists)
+if (typeof window.handlePrediction === 'function') {
+    // Replace the stub with the real function
+    window.handlePrediction = window.handlePredictionFull;
+    console.log('handlePrediction stub replaced with full function');
+} else {
+    window.handlePrediction = window.handlePredictionFull;
+    console.log('handlePrediction function assigned to window');
+}
+console.log('handlePrediction function type:', typeof window.handlePrediction);
 
 let predictor = null;
 // Note: dataRanges is declared in data_ranges.js, don't redeclare it here
@@ -238,7 +250,11 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Attempting initial prediction...');
             if (predictor || (typeof modelParams !== 'undefined' && typeof MovieRevenuePredictor !== 'undefined')) {
                 console.log('Conditions met, calling handlePrediction...');
+                if (typeof window.handlePrediction === 'function') {
                 window.handlePrediction();
+            } else if (typeof window.handlePredictionFull === 'function') {
+                window.handlePredictionFull();
+            }
             } else {
                 console.log('Conditions not met for initial prediction');
             }
@@ -403,6 +419,8 @@ function setupEventListeners() {
             console.log('Predict button clicked via addEventListener');
             if (typeof window.handlePrediction === 'function') {
                 window.handlePrediction();
+            } else if (typeof window.handlePredictionFull === 'function') {
+                window.handlePredictionFull();
             } else {
                 console.error('handlePrediction is not a function');
             }
@@ -415,7 +433,14 @@ function setupEventListeners() {
         setTimeout(function() {
             const btn = document.getElementById('predict-btn');
             if (btn) {
-                btn.onclick = function() { window.handlePrediction(); return false; };
+                btn.onclick = function() { 
+                    if (typeof window.handlePrediction === 'function') {
+                        window.handlePrediction();
+                    } else if (typeof window.handlePredictionFull === 'function') {
+                        window.handlePredictionFull();
+                    }
+                    return false; 
+                };
                 btn.addEventListener('click', window.handlePrediction);
                 console.log('Predict button found and listener attached on retry');
             } else {
@@ -444,7 +469,11 @@ function autoPredict() {
     autoPredictTimeout = setTimeout(function() {
         // Only auto-predict if predictor is loaded
         if (window.predictor || predictor || (typeof modelParams !== 'undefined' && typeof MovieRevenuePredictor !== 'undefined')) {
-            window.handlePrediction();
+            if (typeof window.handlePrediction === 'function') {
+                window.handlePrediction();
+            } else if (typeof window.handlePredictionFull === 'function') {
+                window.handlePredictionFull();
+            }
         }
     }, 300);
 }

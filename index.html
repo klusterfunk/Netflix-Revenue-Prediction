@@ -134,10 +134,30 @@
         </footer>
     </div>
 
+    <script>
+        // Define handlePrediction stub immediately so onclick handlers work
+        window.handlePrediction = function() {
+            console.log('handlePrediction stub called - waiting for full function to load');
+            if (typeof window.handlePredictionFull === 'function') {
+                return window.handlePredictionFull();
+            } else {
+                alert('Please wait for the page to fully load, then try again.');
+            }
+        };
+    </script>
     <script src="model_params.js" onerror="console.error('Failed to load model_params.js')"></script>
     <script src="data_ranges.js" onerror="console.error('Failed to load data_ranges.js')"></script>
     <script src="predictor.js" onerror="console.error('Failed to load predictor.js')"></script>
     <script src="app.js" onerror="console.error('Failed to load app.js')"></script>
+    <script>
+        // After app.js loads, replace the stub with the real function
+        if (typeof window.handlePrediction === 'function' && window.handlePrediction.toString().includes('stub')) {
+            // Keep the real function if it loaded
+            if (typeof window.handlePredictionFull !== 'undefined') {
+                window.handlePrediction = window.handlePredictionFull;
+            }
+        }
+    </script>
     <script>
         // Debug: Test if button and function are accessible
         window.addEventListener('load', function() {
